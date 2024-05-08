@@ -27,7 +27,7 @@ def new(request):
         new_post = Post.objects.create(
             title=title, content=content, creator=request.user
         )
-        image = request.POST['image']
+        image = request.FILES.get("image")
         if image:
             image_name = get_new_file_name(image, request.user, title)
 
@@ -47,7 +47,7 @@ def detail(request, post_pk):
     post = Post.objects.get(pk=post_pk)
     if request.method == "POST":
         content = request.POST["content"]
-        image = request.POST['image']
+        image = request.FILES.get("image")
         if image:
             image_name = get_new_file_name(image, request.user, title = content)
             saved_path = default_storage.save(image_name, image)
@@ -73,7 +73,7 @@ def edit(request, post_pk):
             old_image = post.image_url
             new_image = request.FILES.get("image")
 
-            if old_image != new_image and old_image:
+            if old_image:
                 response = requests.delete(old_image)
 
             if new_image:
@@ -94,6 +94,10 @@ def edit(request, post_pk):
 @check_is_creator_or_admin(Post, "post_pk")
 def delete(request, post_pk):
     post = Post.objects.get(pk=post_pk)
+    for comment in post.comments.all():
+        if comment.image_url:
+            requests.delete(comment.image_url)
+            
     old_image = post.image_url
     if old_image:
         requests.delete(old_image)
